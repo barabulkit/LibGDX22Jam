@@ -78,7 +78,7 @@ public class GameMap {
         dtr = bushesTiles.getTile(9);
     }
 
-    void generateNewMapLayer() {
+    TiledMapTileLayer generateNewMapLayer() {
         newLayer = new TiledMapTileLayer((int) mapWidth, (int) mapHeight, 16, 16);
 
         for(int  i = 0; i < layerRepresentation.length; i++) {
@@ -88,30 +88,37 @@ public class GameMap {
                 switch(layerRepresentation[i][j]) {
                     case "v":
                         cell.setTile(vertical.get(0));
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                     case "vu":
                         cell.setTile(vd);
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                     case "vd":
                         cell.setTile(vu);
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                     case "h":
                         cell.setTile(horizontal.get(0));
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                     case "hl":
                         cell.setTile(hl);
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                     case "hr":
                         cell.setTile(hr);
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                     case "dtr":
                         cell.setTile(dtr);
+                        cell.getTile().getProperties().put("blocked", true);
                         newLayer.setCell(j,i, cell);
                         break;
                 }
@@ -119,6 +126,7 @@ public class GameMap {
             System.out.println();
         }
         tiledMap.getLayers().add(newLayer);
+        return newLayer;
     }
 
     void generateBushes() {

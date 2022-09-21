@@ -11,10 +11,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
+import xyz.solodyankin.characters.Player;
 
 public class GdxJamGame extends Game implements InputProcessor {
 	SpriteBatch batch;
@@ -23,7 +25,8 @@ public class GdxJamGame extends Game implements InputProcessor {
 	GameMap map;
 	OrthographicCamera camera;
 	TiledMapRenderer tiledMapRenderer;
-	Sprite player;
+	TiledMapTileLayer collisionLayer;
+	Player player;
 
 	boolean moveUp;
 	boolean moveDown;
@@ -35,99 +38,139 @@ public class GdxJamGame extends Game implements InputProcessor {
 
 	float mapWidth;
 	float mapHeight;
+
+	float stateTime = 0.f;
 	
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		img = new Texture("badlogic.jpg");
-		player = new Sprite(new Texture("player.png"));
-		player.setPosition(64, 64);
+		player = new Player("Player/Spritesheets/player_run.png",
+				"Player/Spritesheets/player_idle.png");
+
 		mapWidth = Gdx.graphics.getWidth();
 		mapHeight = Gdx.graphics.getHeight();
 
 		camera = new OrthographicCamera();
 		camViewportHalfX = mapWidth / 8.0f;
 		camViewportHalfY = mapHeight / 8.0f;
-		camera.setToOrtho(false, mapWidth , mapHeight);
+		camera.setToOrtho(false, mapWidth / 4.0f, mapHeight / 4.0f);
 		camera.update();
 
 		GameMap map = new GameMap("SavannaTiled.tmx", mapWidth, mapHeight);
 		map.generateBushes();
-		map.generateNewMapLayer();
+		collisionLayer = map.generateNewMapLayer();
 		//tiledMap = new TmxMapLoader().load("SavannaTiled.tmx");
 		tiledMapRenderer = new OrthogonalTiledMapRenderer(map.tiledMap);
 		Gdx.input.setInputProcessor(this);
+		batch.setProjectionMatrix(camera.combined);
 	}
 
 	@Override
 	public void render () {
+		stateTime += Gdx.graphics.getDeltaTime();
+
+		batch.begin();
+
+
+		if(moveUp) {
+			float newPos = player.getY() + 32 * Gdx.graphics.getDeltaTime();
+			if(!isBlocked(player.getX(), newPos + player.getHeight())) {
+				player.setY(newPos);
+				player.setY(MathUtils.clamp(player.getY(), 0, mapHeight - player.getHeight()));
+
+				camera.position.set(camera.position.x, player.getY(), 0);
+				camera.position.y = MathUtils.clamp(camera.position.y, camViewportHalfY, mapHeight - camViewportHalfY);
+			}
+		}
+
+		if(moveDown) {
+			float newPos = player.getY() - 32 * Gdx.graphics.getDeltaTime();
+			if(!isBlocked(player.getX(), newPos)) {
+				player.setY(newPos);
+				player.setY(MathUtils.clamp(player.getY(), 0, mapHeight - player.getHeight()));
+
+				camera.position.set(camera.position.x, player.getY(), 0);
+				camera.position.y = MathUtils.clamp(camera.position.y, camViewportHalfY, mapHeight - camViewportHalfY);
+			}
+		}
+
+		if(moveRight) {
+			float newPos = player.getX() + 32 * Gdx.graphics.getDeltaTime();
+			if(!isBlocked(newPos + player.getWidth(), player.getY())) {
+				player.setX(newPos);
+				player.setX(MathUtils.clamp(player.getX(), 0, mapWidth - player.getWidth()));
+
+				camera.position.set(player.getX(), camera.position.y, 0);
+				camera.position.x = MathUtils.clamp(camera.position.x, camViewportHalfX, mapWidth - camViewportHalfX);
+			}
+		}
+
+		if(moveLeft) {
+			float newPos = player.getX() - 32 * Gdx.graphics.getDeltaTime();
+			if(!isBlocked(newPos, player.getY())) {
+				player.setX(newPos);
+				player.setX(MathUtils.clamp(player.getX(), 0, mapWidth - player.getWidth()));
+
+				camera.position.set(player.getX(), camera.position.y, 0);
+				camera.position.x = MathUtils.clamp(camera.position.x, camViewportHalfX, mapWidth - camViewportHalfX);
+			}
+		}
+
 		ScreenUtils.clear(1, 0, 0, 1);
 		camera.update();
 		tiledMapRenderer.setView(camera);
 		tiledMapRenderer.render();
-		batch.begin();
-		player.draw(batch);
-
-		if(moveUp) {
-			camera.translate(0, 32 * Gdx.graphics.getDeltaTime());
-			//camera.position.x = MathUtils.clamp(camera.position.x, camViewportHalfX, mapWidth + camViewportHalfX);
-			camera.position.y = MathUtils.clamp(camera.position.y, camViewportHalfY, mapHeight - camViewportHalfY);
-		}
-
-		if(moveDown) {
-			camera.translate(0, -32 * Gdx.graphics.getDeltaTime());
-			//camera.position.x = MathUtils.clamp(camera.position.x, camViewportHalfX, mapWidth + camViewportHalfX);
-			camera.position.y = MathUtils.clamp(camera.position.y, camViewportHalfY, mapHeight - camViewportHalfY);
-		}
-
-		if(moveRight) {
-			camera.translate(32 * Gdx.graphics.getDeltaTime(), 0);
-			camera.position.x = MathUtils.clamp(camera.position.x, camViewportHalfX, mapWidth - camViewportHalfX);
-			//camera.position.y = MathUtils.clamp(camera.position.y, camViewportHalfY, mapHeight + camViewportHalfY);
-		}
-
-		if(moveLeft) {
-			camera.translate(-32 * Gdx.graphics.getDeltaTime(), 0);
-			camera.position.x = MathUtils.clamp(camera.position.x, camViewportHalfX, mapWidth - camViewportHalfX);
-			//camera.position.y = MathUtils.clamp(camera.position.y, camViewportHalfY + 1, mapHeight + camViewportHalfY);
-		}
+		batch.draw(player.getFrameByTime(stateTime), player.getX(), player.getY());
 
 		batch.end();
 	}
 	
 	@Override
-	public void dispose () {
+	public void dispose() {
 		batch.dispose();
 		img.dispose();
 	}
 
 	@Override
 	public boolean keyUp(int keycode) {
-		if(keycode == Input.Keys.A)
+		if(keycode == Input.Keys.A) {
 			moveLeft = false;
-		if(keycode == Input.Keys.D)
+			player.setCurrentAnimation("idle");
+		}
+		if(keycode == Input.Keys.D) {
 			moveRight = false;
-		if(keycode == Input.Keys.W)
+			player.setCurrentAnimation("idle");
+		}
+		if(keycode == Input.Keys.W) {
 			moveUp = false;
-		if(keycode == Input.Keys.S)
+			player.setCurrentAnimation("idle");
+		}
+		if(keycode == Input.Keys.S) {
 			moveDown = false;
+			player.setCurrentAnimation("idle");
+		}
 		return false;
 	}
 
 	@Override
 	public boolean keyDown(int keycode) {
-		if(keycode == Input.Keys.A)
+		if(keycode == Input.Keys.A) {
 			moveLeft = true;
-			//camera.translate(-32 * Gdx.graphics.getDeltaTime(), 0);
-		if(keycode == Input.Keys.D)
+			player.setCurrentAnimation("walk");
+		}
+		if(keycode == Input.Keys.D) {
 			moveRight = true;
-			//camera.translate(32 * Gdx.graphics.getDeltaTime(), 0);
-		if(keycode == Input.Keys.W)
+			player.setCurrentAnimation("walk");
+		}
+		if(keycode == Input.Keys.W) {
 			moveUp = true;
-			//camera.translate(0, 32 * Gdx.graphics.getDeltaTime());
-		if(keycode == Input.Keys.S)
+			player.setCurrentAnimation("walk");
+		}
+		if(keycode == Input.Keys.S) {
 			moveDown = true;
-			//camera.translate(0, -32 * Gdx.graphics.getDeltaTime());
+			player.setCurrentAnimation("walk");
+		}
 		return false;
 	}
 
@@ -158,6 +201,15 @@ public class GdxJamGame extends Game implements InputProcessor {
 
 	@Override
 	public boolean scrolled(float amountX, float amountY) {
+		return false;
+	}
+
+	private boolean isBlocked(float x, float y) {
+		TiledMapTileLayer.Cell cell = collisionLayer.getCell((int) (x / collisionLayer.getTileWidth()),
+				(int) (y / collisionLayer.getTileHeight()));
+
+		if(cell != null)
+			return cell.getTile().getProperties().containsKey("blocked");
 		return false;
 	}
 }
