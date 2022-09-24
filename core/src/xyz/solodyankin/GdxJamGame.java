@@ -13,9 +13,16 @@ import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
+import xyz.solodyankin.characters.Bullet;
 import xyz.solodyankin.characters.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Vector;
 
 public class GdxJamGame extends Game implements InputProcessor {
 	SpriteBatch batch;
@@ -41,7 +48,10 @@ public class GdxJamGame extends Game implements InputProcessor {
 	float mapHeight;
 
 	float stateTime = 0.f;
-	
+
+	List<Bullet> bulletList;
+	Texture bulletTexture;
+
 	@Override
 	public void create () {
 		cursor = new Pixmap(Gdx.files.internal("Cursor/cursor.png"));
@@ -50,6 +60,10 @@ public class GdxJamGame extends Game implements InputProcessor {
 		img = new Texture("badlogic.jpg");
 		player = new Player("Player/Spritesheets/player_run.png",
 				"Player/Spritesheets/player_idle.png");
+
+		//bullet = new Bullet("Player/Spritesheets/bullet.png");
+		bulletList = new ArrayList<>();
+		bulletTexture = new Texture("Player/Spritesheets/bullet.png");
 
 		player.setX(mapWidth/2);
 		player.setY(mapHeight / 2);
@@ -149,6 +163,21 @@ public class GdxJamGame extends Game implements InputProcessor {
 		tiledMapRenderer.setView(camera);
 		tiledMapRenderer.render();
 
+		/*bulletList.removeIf(Bullet::update);
+
+		for(Bullet bullet : bulletList) {
+			//if(bullet.update()) bulletList.remove(bullet);
+			bullet.draw(batch);
+		}*/
+		ListIterator<Bullet> iter = bulletList.listIterator();
+		while(iter.hasNext()) {
+			Bullet bullet = iter.next();
+			if(bullet.update()) {
+				iter.remove();
+			}
+			else bullet.draw(batch);
+		}
+
 		player.setWeaponRotation(degs);
 		player.draw(batch, flipPlayerX, flipWeaponX, flipWeaponY, stateTime);
 
@@ -160,6 +189,7 @@ public class GdxJamGame extends Game implements InputProcessor {
 		batch.dispose();
 		img.dispose();
 		cursor.dispose();
+		bulletTexture.dispose();
 	}
 
 	@Override
@@ -209,6 +239,19 @@ public class GdxJamGame extends Game implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+		if(button == Input.Buttons.LEFT) {
+
+			Vector3 vec = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+			Vector3 vec2 = camera.unproject(vec);
+			float x = vec2.x;
+			float y = vec2.y;
+
+			Vector2 mousePosition = new Vector2(x, y);
+			Vector2 playerPosition = new Vector2(player.getX(), player.getY());
+			Vector2 direction = mousePosition.sub(playerPosition).nor();
+
+			bulletList.add(new Bullet(bulletTexture, player.getX(), player.getY(), direction));
+		}
 		return false;
 	}
 
