@@ -5,16 +5,15 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import xyz.solodyankin.characters.Player;
 
@@ -36,6 +35,8 @@ public class GdxJamGame extends Game implements InputProcessor {
 	float camViewportHalfX;
 	float camViewportHalfY;
 
+	Pixmap cursor;
+
 	float mapWidth;
 	float mapHeight;
 
@@ -43,10 +44,15 @@ public class GdxJamGame extends Game implements InputProcessor {
 	
 	@Override
 	public void create () {
+		cursor = new Pixmap(Gdx.files.internal("Cursor/cursor.png"));
+		Gdx.graphics.setCursor(Gdx.graphics.newCursor(cursor, 0,0));
 		batch = new SpriteBatch();
 		img = new Texture("badlogic.jpg");
 		player = new Player("Player/Spritesheets/player_run.png",
 				"Player/Spritesheets/player_idle.png");
+
+		player.setX(mapWidth/2);
+		player.setY(mapHeight / 2);
 
 		mapWidth = Gdx.graphics.getWidth();
 		mapHeight = Gdx.graphics.getHeight();
@@ -71,7 +77,7 @@ public class GdxJamGame extends Game implements InputProcessor {
 		stateTime += Gdx.graphics.getDeltaTime();
 
 		batch.begin();
-
+		float flipPlayerX = 1.0f;
 
 		if(moveUp) {
 			float newPos = player.getY() + 32 * Gdx.graphics.getDeltaTime();
@@ -117,11 +123,34 @@ public class GdxJamGame extends Game implements InputProcessor {
 			}
 		}
 
+		Vector3 vec = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+		Vector3 vec2 = camera.unproject(vec);
+		float x = vec2.x;
+		float y = vec2.y;
+		float playerX = player.getX();
+		float playerY = player.getY();
+
+		float degs = (float) Math.toDegrees(Math.atan2((playerY - y), (playerX - x)));
+
+		float flipWeaponX;
+		float flipWeaponY = 1.0f;
+
+		if(x < playerX) {
+			flipPlayerX = -1.0f;
+			flipWeaponX = -1.f;
+		}
+		else {
+			flipWeaponX = -1.f;
+			flipWeaponY = -1.f;
+		}
+
 		ScreenUtils.clear(1, 0, 0, 1);
 		camera.update();
 		tiledMapRenderer.setView(camera);
 		tiledMapRenderer.render();
-		batch.draw(player.getFrameByTime(stateTime), player.getX(), player.getY());
+
+		player.setWeaponRotation(degs);
+		player.draw(batch, flipPlayerX, flipWeaponX, flipWeaponY, stateTime);
 
 		batch.end();
 	}
@@ -130,26 +159,25 @@ public class GdxJamGame extends Game implements InputProcessor {
 	public void dispose() {
 		batch.dispose();
 		img.dispose();
+		cursor.dispose();
 	}
 
 	@Override
 	public boolean keyUp(int keycode) {
 		if(keycode == Input.Keys.A) {
 			moveLeft = false;
-			player.setCurrentAnimation("idle");
 		}
 		if(keycode == Input.Keys.D) {
 			moveRight = false;
-			player.setCurrentAnimation("idle");
 		}
 		if(keycode == Input.Keys.W) {
 			moveUp = false;
-			player.setCurrentAnimation("idle");
 		}
 		if(keycode == Input.Keys.S) {
 			moveDown = false;
-			player.setCurrentAnimation("idle");
 		}
+
+		if(!moveUp && !moveDown && !moveLeft && !moveRight) player.setCurrentAnimation("idle");
 		return false;
 	}
 
@@ -196,6 +224,7 @@ public class GdxJamGame extends Game implements InputProcessor {
 
 	@Override
 	public boolean mouseMoved(int screenX, int screenY) {
+
 		return false;
 	}
 
