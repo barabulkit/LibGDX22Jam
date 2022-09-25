@@ -134,8 +134,8 @@ public class GameMap {
 
         for(int i = 0; i < bushesNum; i++) {
             int length = random.nextInt(5) + 3;
-            int xStart = random.nextInt(31 - length);
-            int yStart = random.nextInt(31 - length);
+            int xStart = random.nextInt(29 - length) + 2;
+            int yStart = random.nextInt(29 - length) + 2;
 
             int bushType = random.nextInt(3);
 
