@@ -51,6 +51,8 @@ public class GdxJamGame extends Game implements InputProcessor {
 
 	List<Bullet> bulletList;
 	Texture bulletTexture;
+	float flipPlayerX;
+	float flipWeaponY;
 
 	@Override
 	public void create () {
@@ -91,7 +93,7 @@ public class GdxJamGame extends Game implements InputProcessor {
 		stateTime += Gdx.graphics.getDeltaTime();
 
 		batch.begin();
-		float flipPlayerX = 1.0f;
+		flipPlayerX = 1.0f;
 
 		if(moveUp) {
 			float newPos = player.getY() + 32 * Gdx.graphics.getDeltaTime();
@@ -147,7 +149,7 @@ public class GdxJamGame extends Game implements InputProcessor {
 		float degs = (float) Math.toDegrees(Math.atan2((playerY - y), (playerX - x)));
 
 		float flipWeaponX;
-		float flipWeaponY = 1.0f;
+		flipWeaponY = 1.0f;
 
 		if(x < playerX) {
 			flipPlayerX = -1.0f;
@@ -240,7 +242,6 @@ public class GdxJamGame extends Game implements InputProcessor {
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
 		if(button == Input.Buttons.LEFT) {
-
 			Vector3 vec = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
 			Vector3 vec2 = camera.unproject(vec);
 			float x = vec2.x;
@@ -250,7 +251,15 @@ public class GdxJamGame extends Game implements InputProcessor {
 			Vector2 playerPosition = new Vector2(player.getX(), player.getY());
 			Vector2 direction = mousePosition.sub(playerPosition).nor();
 
-			bulletList.add(new Bullet(bulletTexture, player.getX(), player.getY(), direction));
+			Vector2 offsetVector = new Vector2(1, 0).rotateDeg(player.getWeaponRotation());
+
+			float bulletX = (float) ((player.getX() + player.getWidth() / 3.0) + (16 * offsetVector.x * -1));
+			float bulletY = (float) ((player.getY() + player.getHeight() / 2.0) + (8 * offsetVector.y * -1));
+
+			bulletList.add(new Bullet(bulletTexture,
+					bulletX,
+					bulletY,
+					direction));
 		}
 		return false;
 	}
